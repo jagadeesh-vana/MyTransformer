@@ -30,8 +30,9 @@ def split(split):
 n_embd = 32
 block_size = 8
 batch_size = 32
+n_layer = 2
 
-m = GPTLanguageModel(vocab_size, n_embd, block_size)
+m = GPTLanguageModel(vocab_size, n_embd, block_size, n_layer)
 optimizer = torch.optim.AdamW(m.parameters(), lr=1e-3)
 
 for _ in range(10):
