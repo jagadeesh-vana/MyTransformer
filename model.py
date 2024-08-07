@@ -15,14 +15,14 @@ class Head(nn.Module):
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
     def forward(self, x):
-        B, T, C = x.shape
-        q = self.query(x)
-        k = self.keys(x)
-        v = self.values(x)
-        wei = q @ k.transpose(-2,-1) *C **-0.5
+        B, T, C = x.shape # (B, T, n_embd)
+        q = self.query(x) # (B, T, n_embd/num_heads)
+        k = self.keys(x) # (B, T, n_embd/num_heads)
+        v = self.values(x) # # (B, T, n_embd/num_heads)
+        wei = q @ k.transpose(-2,-1) *C **-0.5 # (B, T, T)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         wei = F.softmax(wei, dim=-1)
-        out = wei @ v
+        out = wei @ v # (B, T, n_embd/num_heads)
         return out
 
 class MultiHeadAttention(nn.Module):
@@ -34,8 +34,8 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(0.2)
 
     def forward(self, x ):
-        out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.dropout(self.proj(out))
+        out = torch.cat([h(x) for h in self.heads], dim=-1) # (B, T, n_embd)
+        out = self.dropout(self.proj(out)) # (B, T, n_embd)
         return out
 
 class FeedForward(nn.Module):
@@ -50,7 +50,7 @@ class FeedForward(nn.Module):
         )
         
     def forward(self, x):
-        return self.net(x)
+        return self.net(x) # (B, T, n_embd)
         
 class Block(nn.Module):
     
@@ -62,8 +62,8 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd)
     
     def forward(self, x):
-        x = x + self.mmsa(self.ln1(x))
-        x = x + self.ff(self.ln2(x))
+        x = x + self.mmsa(self.ln1(x)) # (B, T, n_embd)
+        x = x + self.ff(self.ln2(x)) # (B, T, n_embd)
         return x
         
 
@@ -86,7 +86,7 @@ class GPTLanguageModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx, targets=None):
-        B, T = idx.shape
+        B, T = idx.shape  # (B, T)
         token_embeddings = self.token_embedding_table(idx)  # (B, T, n_embd)
         pos_embeddings = self.position_embedding_table(torch.arange(T)) # (T, n_embd)
         x = token_embeddings + pos_embeddings # (B, T, n_embd)
